@@ -74,9 +74,9 @@ impl TryFrom<&str> for Strategy {
 }
 
 struct Round {
-    them: RPS,
-    us: RPS,
-    strategy: Strategy,
+    pub them: RPS,
+    pub us: RPS,
+    pub strategy: Strategy,
 }
 
 impl Round {

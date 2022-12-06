@@ -11,9 +11,17 @@ name = "cleanup"
 version = "0.1.0"
 
 [[package]]
+name = "crane"
+version = "0.1.0"
+
+[[package]]
 name = "rps"
 version = "0.1.0"
 
 [[package]]
 name = "rucksack"
+version = "0.1.0"
+
+[[package]]
+name = "start-of-packet"
 version = "0.1.0"

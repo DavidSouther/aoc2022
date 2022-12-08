@@ -133,8 +133,7 @@ impl Forest {
 
 fn main() {
     let forest = Forest::parse(include_str!("../data"));
-    let visible = forest.number_visible();
-    // 324: low
+    // let visible = forest.number_visible();
     let scenic = forest.most_scenic();
     println!("{scenic}");
 }

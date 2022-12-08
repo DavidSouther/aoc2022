@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 pub enum Entry {
     Dir(Dir),
@@ -103,7 +103,7 @@ impl FS {
         let mut fs = FS::new();
 
         history.lines().for_each(|line| {
-            eprintln!("{line}");
+            // eprintln!("{line}");
             if line.starts_with("$") {
                 let parts: Vec<&str> = line.split(" ").collect();
                 if parts[1] == "cd" {
@@ -123,6 +123,57 @@ impl FS {
         });
 
         fs
+    }
+
+    pub fn sum_smallest(&self) -> usize {
+        let mut sum = 0;
+
+        let mut stack: VecDeque<&Entry> = VecDeque::new();
+        stack.push_back(&self.root);
+
+        while !stack.is_empty() {
+            let next = stack.pop_front();
+            match next {
+                Some(Entry::Dir(d)) => {
+                    d.entries.values().for_each(|e| stack.push_back(e));
+                    let q = d.size();
+                    if q < 100_000 {
+                        sum += q
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        sum
+    }
+
+    pub fn find_ideal(&self) -> usize {
+        let unused = 70000000 - self.root.size();
+        let missing = 30000000 - unused;
+        let mut best = usize::MAX;
+
+        eprintln!("Looking for {missing} bytes");
+
+        let mut stack: VecDeque<&Entry> = VecDeque::new();
+        stack.push_back(&self.root);
+
+        while !stack.is_empty() {
+            let next = stack.pop_front();
+            match next {
+                Some(Entry::Dir(d)) => {
+                    d.entries.values().for_each(|e| stack.push_back(e));
+                    let q = d.size();
+                    if q >= missing && q < best {
+                        eprintln!("Improving {q}");
+                        best = q;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        best
     }
 
     pub fn iter(&self) -> EntryIter<'_> {
@@ -153,12 +204,13 @@ impl<'a> Iterator for EntryIter<'a> {
                 }
             },
             Some(entry) => {
-                if let Entry::Dir(dir) = entry {
-                    *self = EntryIter {
-                        entries: dir.entries.values(),
-                        parent: Some(Box::new(std::mem::take(self))),
-                    }
-                }
+                // if let Entry::Dir(dir) = entry {
+                //     *self = EntryIter {
+                //         entries: Box::new(std::iter::empty()),
+                //         // entries: dir.entries.values(),
+                //         parent: Some(Box::new(std::mem::take(self))),
+                //     }
+                // }
                 Some(entry)
             }
         }
@@ -183,7 +235,8 @@ pub fn dir_size(fs: &FS, size: usize) -> usize {
 
 fn main() {
     let fs = FS::parse(include_str!("../data"));
-    let size = dir_size(&fs, 100_000);
+    // let size = dir_size(&fs, 100_000);
+    let size = fs.find_ideal();
     eprintln!("{size}");
 }
 
@@ -218,5 +271,19 @@ $ ls
     #[test]
     fn parse_input() {
         FS::parse(TEST_DATA);
+    }
+
+    #[test]
+    fn sum_smallest() {
+        let fs = FS::parse(TEST_DATA);
+        let sum = fs.sum_smallest();
+        assert_eq!(sum, 95437);
+    }
+
+    #[test]
+    fn ideal() {
+        let fs = FS::parse(TEST_DATA);
+        let ideal = fs.find_ideal();
+        assert_eq!(ideal, 24933642);
     }
 }

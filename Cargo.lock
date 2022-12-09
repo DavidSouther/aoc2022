@@ -19,6 +19,10 @@ name = "folder-size"
 version = "0.1.0"
 
 [[package]]
+name = "rope"
+version = "0.1.0"
+
+[[package]]
 name = "rps"
 version = "0.1.0"
 

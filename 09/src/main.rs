@@ -108,9 +108,8 @@ impl From<&str> for Move {
     }
 }
 
-pub fn track_tail(moves: &str) -> usize {
-    let mut rope = Rope::new(10);
-    // let mut rope = Rope::new(2);
+pub fn track_tail(size: usize, moves: &str) -> usize {
+    let mut rope = Rope::new(size);
     let mut tail_track: HashSet<Pos> = HashSet::new();
 
     for line in moves.lines() {
@@ -127,8 +126,10 @@ pub fn track_tail(moves: &str) -> usize {
 
 fn main() {
     let moves = include_str!("../data");
-    let spots = track_tail(moves);
-    println!("{spots}");
+    let spots = track_tail(2, moves);
+    println!("2: {spots}");
+    let spots = track_tail(10, moves);
+    println!("10: {spots}");
 }
 
 #[cfg(test)]
@@ -146,14 +147,16 @@ R 2";
 
     #[test]
     pub fn rope_tail() {
-        let spots = track_tail(TEST_DATA);
-        // assert_eq!(spots, 13);
+        let spots = track_tail(2, TEST_DATA);
+        assert_eq!(spots, 13);
+        let spots = track_tail(10, TEST_DATA);
         assert_eq!(spots, 1);
     }
 
     #[test]
     pub fn long_rope_tail() {
         let spots = track_tail(
+            10,
             "R 5
 U 8
 L 8

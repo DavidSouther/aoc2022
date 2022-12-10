@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 #[derive(Debug, Default, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Pos {
@@ -6,8 +6,27 @@ pub struct Pos {
     col: i32,
 }
 
+#[derive(Default)]
+struct Bounds(Pos, Pos);
+
+impl Bounds {
+    fn extend(&mut self, point: &Pos) {
+        self.0.row = self.0.row.min(point.row);
+        self.0.col = self.0.col.min(point.col);
+        self.1.row = self.1.row.max(point.row);
+        self.1.col = self.1.col.max(point.col);
+    }
+
+    fn square(&self) -> i32 {
+        (self.1.row - self.0.row).max(self.1.col - self.0.col)
+    }
+}
+
 #[derive(Debug, Default)]
-pub struct Rope(Vec<Pos>);
+pub struct Rope {
+    knots: Vec<Pos>,
+    path: HashSet<Pos>,
+}
 
 // fn snap(head: &Pos, tail: &mut Pos) {
 fn snap(vec: &mut Vec<Pos>, tail: usize) {
@@ -38,27 +57,30 @@ impl Rope {
         for _ in 0..len {
             vec.push(Default::default())
         }
-        Rope(vec)
+        Rope {
+            knots: vec,
+            path: HashSet::new(),
+        }
     }
 
     pub fn tail(&self) -> &Pos {
-        &self.0.last().unwrap()
+        &self.knots.last().unwrap()
     }
 
     pub fn right(&mut self) {
-        self.0[0].row += 1;
+        self.knots[0].row += 1;
     }
 
     pub fn left(&mut self) {
-        self.0[0].row -= 1;
+        self.knots[0].row -= 1;
     }
 
     pub fn up(&mut self) {
-        self.0[0].col += 1;
+        self.knots[0].col += 1;
     }
 
     pub fn down(&mut self) {
-        self.0[0].col -= 1;
+        self.knots[0].col -= 1;
     }
 
     pub fn r#move(&mut self, dir: &Dir) {
@@ -69,9 +91,71 @@ impl Rope {
             Dir::Down => self.down(),
         }
 
-        for i in 1..self.0.len() {
-            snap(&mut self.0, i);
+        for i in 1..self.knots.len() {
+            snap(&mut self.knots, i);
         }
+    }
+
+    pub fn wiggle(&mut self, moves: &str) {
+        for line in moves.lines() {
+            let r#move: Move = line.into();
+            for _ in 0..r#move.count {
+                self.r#move(&r#move.dir);
+                self.path.insert(self.tail().clone());
+                // eprintln!("{rope:?} {}", tail_track.len());
+            }
+        }
+    }
+}
+
+impl Display for Rope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut bounds = Bounds::default();
+        self.knots.iter().for_each(|p| bounds.extend(p));
+        self.path.iter().for_each(|p| bounds.extend(p));
+
+        let mut board = Vec::<Vec<char>>::new();
+        let size = bounds.square();
+        for _ in 0..=size {
+            let mut line = Vec::<char>::new();
+            for _ in 0..=size {
+                line.push('.');
+            }
+            board.push(line);
+        }
+
+        for p in self.path.iter() {
+            let row = p.row - bounds.0.row;
+            let col = p.col - bounds.0.col;
+            board[row as usize][col as usize] = '#';
+        }
+
+        for i in (0..self.knots.len()).rev() {
+            let p = self.knots[i];
+            let row = p.row - bounds.0.row;
+            let col = p.col - bounds.0.col;
+            let c = if i == 0 {
+                'H'
+            } else {
+                char::from_digit(i as u32, 10).unwrap()
+            };
+            board[row as usize][col as usize] = c;
+        }
+
+        let zrow = (0 - bounds.0.row) as usize;
+        let zcol = (0 - bounds.0.col) as usize;
+        if board[zrow][zcol] == '.' || board[zrow][zcol] == '#' {
+            board[zrow][zcol] = 's';
+        }
+
+        for r in (0..board.len()).rev() {
+            for c in 0..board[r].len() {
+                write!(f, "{}", board[c][r])?;
+            }
+            write!(f, "\n")?;
+        }
+
+        write!(f, "\n")
     }
 }
 
@@ -110,18 +194,12 @@ impl From<&str> for Move {
 
 pub fn track_tail(size: usize, moves: &str) -> usize {
     let mut rope = Rope::new(size);
-    let mut tail_track: HashSet<Pos> = HashSet::new();
 
-    for line in moves.lines() {
-        let r#move: Move = line.into();
-        for _ in 0..r#move.count {
-            rope.r#move(&r#move.dir);
-            tail_track.insert(rope.tail().clone());
-            // eprintln!("{rope:?} {}", tail_track.len());
-        }
-    }
+    rope.wiggle(moves);
 
-    tail_track.len()
+    eprintln!("{rope}");
+
+    rope.path.len()
 }
 
 fn main() {

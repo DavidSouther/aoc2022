@@ -33,21 +33,35 @@ fn snap(vec: &mut Vec<Pos>, tail: usize) {
     let head = vec[tail - 1].clone();
     let tail = vec.get_mut(tail).unwrap();
 
-    let dx = tail.row - head.row;
-    if dx < -1 {
-        tail.row = head.row - 1;
-        tail.col = head.col;
-    } else if dx > 1 {
-        tail.row = head.row + 1;
-        tail.col = head.col;
+    let drow = tail.row - head.row;
+    let dcol = tail.col - head.col;
+
+    if dcol == 0 {
+        if drow >= 2 {
+            tail.row = head.row + 1;
+        }
+        if drow <= 2 {
+            tail.row = head.row - 1;
+        }
     }
-    let dy = tail.col - head.col;
-    if dy < -1 {
-        tail.col = head.col - 1;
+
+    if drow == 0 {
+        if drow >= 2 {
+            tail.col = head.col + 1;
+        }
+        if drow <= 2 {
+            tail.col = head.col - 1;
+        }
+    }
+
+    if dcol.abs() >= 2 && drow.abs() >= 1 {
         tail.row = head.row;
-    } else if dy > 1 {
-        tail.col = head.col + 1;
-        tail.row = head.row;
+        tail.col = head.col - dcol.signum();
+    }
+
+    if drow.abs() >= 2 && dcol.abs() >= 1 {
+        tail.col = head.col;
+        tail.row = head.row - drow.signum();
     }
 }
 
@@ -197,15 +211,15 @@ pub fn track_tail(size: usize, moves: &str) -> usize {
 
     rope.wiggle(moves);
 
-    eprintln!("{rope}");
+    // eprintln!("{rope}");
 
     rope.path.len()
 }
 
 fn main() {
     let moves = include_str!("../data");
-    let spots = track_tail(2, moves);
-    println!("2: {spots}");
+    // let spots = track_tail(2, moves);
+    // println!("2: {spots}");
     let spots = track_tail(10, moves);
     println!("10: {spots}");
 }
